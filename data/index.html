@@ -1396,6 +1396,46 @@
                 </div>
                 <pre id="elrsStatus" role="status" aria-live="polite" style="white-space: pre-wrap; font-size: 13px"></pre>
               </form>
+
+              <h2 style="margin-top: 24px">Goggle OSD</h2>
+              <form id="elrsOsdForm" onsubmit="saveElrsOsd(event)">
+                <div style="margin-bottom: 16px; padding: 12px; background-color: var(--bg-secondary); border-radius: 8px; font-size: 14px">
+                  <p style="margin: 0">Lap times on HDZero goggles through an ESP8285/ESP32 flashed as an ExpressLRS <b>Race Timer</b> backpack, wired to the gate's spare UART. The gate's Wi-Fi is not changed. Use the binding phrase of your goggles.</p>
+                  <p id="elrsOsdPins" style="margin: 8px 0 0 0; color: var(--secondary-color); font-size: 13px"></p>
+                </div>
+                <div class="config-item">
+                  <label><input type="checkbox" id="elrsOsdEnabled" /> <span>Show lap times on the goggles</span></label>
+                </div>
+                <div class="config-item">
+                  <label for="elrsOsdPhrase">Goggle binding phrase:</label>
+                  <input type="password" id="elrsOsdPhrase" maxlength="63" autocomplete="new-password" placeholder="Blank keeps the current pairing" />
+                </div>
+                <div class="config-item">
+                  <label for="elrsOsdRow">OSD row (0 = top, 16 = bottom):</label>
+                  <input type="number" id="elrsOsdRow" min="0" max="16" step="1" />
+                </div>
+                <div class="config-item">
+                  <label for="elrsOsdHold">Seconds to keep each lap on screen (0 = until the next):</label>
+                  <input type="number" id="elrsOsdHold" min="0" max="60" step="1" />
+                </div>
+                <div class="config-item">
+                  <label><input type="checkbox" id="elrsOsdRaceControl" /> <span>Start and stop races with the radio's DVR Rec switch</span></label>
+                  <p style="margin: 4px 0 0 0; color: var(--secondary-color); font-size: 13px">C5 receiver only. Needs the patched timer backpack built with the radio's binding phrase, and radio and goggles on the same phrase. The switch also starts the goggle DVR.</p>
+                </div>
+                <div class="config-item">
+                  <label><input type="checkbox" id="elrsOsdInvert" /> <span>Swap the Start and Stop positions</span></label>
+                </div>
+                <div class="config-item">
+                  <label><input type="checkbox" id="elrsOsdForget" /> <span>Forget pairing</span></label>
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap">
+                  <button type="submit" id="elrsOsdSave" style="flex: 1">Save</button>
+                  <button type="button" onclick="testElrsOsd()" style="flex: 1">Send test</button>
+                  <button type="button" onclick="loadElrsOsd(false)" style="flex: 1; background-color: var(--secondary-color)">Refresh status</button>
+                  <button type="button" onclick="elrsOsdWifi()" style="flex: 1; background-color: var(--secondary-color)">Backpack Wi-Fi update</button>
+                </div>
+                <pre id="elrsOsdStatus" role="status" aria-live="polite" style="white-space: pre-wrap; font-size: 13px"></pre>
+              </form>
             </div>
 
             <!-- Webhooks Section -->

@@ -4,6 +4,7 @@
 #include "led.h"
 #include "webserver.h"
 #include "elrs_backpack.h"
+#include "elrs_osd.h"
 #include "racehistory.h"
 #include "race_rssi_recorder.h"
 #include "c5link.h"
@@ -492,6 +493,7 @@ void setup() {
 
     // Before the web server: its Wi-Fi setup depends on the backpack settings.
     elrsBackpack.begin(&config, &timer, &c5RaceControl);
+    elrsOsd.begin(&timer, &config, &c5RaceControl);
 #ifdef HAS_BATTERY_MONITOR
     ws.init(&config, &timer, &monitor, &buzzer, &led, &raceHistory, &storage, &selfTest, &rx, &trackManager, &webhookManager);
 #else
@@ -639,6 +641,7 @@ void loop() {
     if (eventDirector.takeChanged()) ws.triggerConfigUpdated();
     if (const char* state = c5RaceControl.takeStateEvent()) ws.notifyGateRaceState(state);
     elrsBackpack.service(currentTimeMs);
+    elrsOsd.service(currentTimeMs);
 
     // Debug: Periodic "alive" message every 5 seconds with detailed memory stats
     static uint32_t lastAliveMs = 0;
@@ -931,6 +934,7 @@ void loop() {
     if (timer.isLapAvailable()) {
         uint32_t lapTime = timer.getLapTime();
         transportManager.broadcastLapEvent(lapTime);
+        elrsOsd.onLap(lapTime);
 
 #if ENABLE_LCD_UI && defined(WAVESHARE_ESP32S3_LCD2)
         if (g_lcdUi) {

@@ -1,5 +1,6 @@
 #include "webserver.h"
 #include "elrs_backpack.h"
+#include "elrs_osd.h"
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 #include <esp_timer.h>
@@ -1063,6 +1064,7 @@ void Webserver::startServices() {
 
     startLittleFS();
     elrsBackpack.registerRoutes(server);
+    elrsOsd.registerRoutes(server);
     
     // Note: storage is already initialized in main.cpp before webserver starts
     // Do NOT call storage->init() here as it would reset the sdAvailable flag!

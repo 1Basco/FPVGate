@@ -9863,7 +9863,7 @@ function switchSettingsSection(ev, sectionName) {
       }
     });
   }
-  if (sectionName === "elrs") loadElrsSettings();
+  if (sectionName === "elrs") { loadElrsSettings(); loadElrsOsd(); }
 }
 
 // ---- ELRS backpack: race start and stop from a radio switch ----
@@ -9939,6 +9939,107 @@ async function saveElrsSettings(event) {
   } catch (error) {
     status.textContent = error.message;
     button.disabled = false;
+  }
+}
+
+// Goggle OSD through a serial ELRS timer backpack (lib/ELRSOSD)
+async function elrsOsdRequest(path, method, body) {
+  const response = await fetch(path, { method, body, cache: "no-store" });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  return data;
+}
+
+function elrsOsdStatusText(data) {
+  if (!data.supported) return "This board has no backpack UART.";
+  const lines = [];
+  if (!data.enabled) lines.push("Off.");
+  else if (!data.configured) lines.push("Enter the goggle binding phrase.");
+  else lines.push(data.backpackSeen
+    ? `Backpack connected${data.backpackVersion ? ` (v${data.backpackVersion})` : ""}.`
+    : "No reply from the backpack. Check TX/RX wiring (crossed), 5V and that it runs the Race Timer firmware.");
+  if (data.open) lines.push(`Frames sent: ${data.framesSent}${data.framesDropped ? `, dropped: ${data.framesDropped}` : ""}`);
+  if (data.raceControl) {
+    if (!data.switchMessages) lines.push("Radio switch: nothing received yet. Flip the DVR Rec switch.");
+    else lines.push(`Radio switch: ${data.lastSwitch === 1 ? "on" : "off"} (${Math.round(data.lastSwitchAgoMs / 1000)} s ago, ${data.switchMessages} messages)`);
+    if (data.lastCommand) {
+      const reasons = {
+        started: "race started", starting: "starting", stopping: "stopping", notReady: "the race could not start",
+        startFailed: "the race did not start", needsC5: "needs the ESP32-C5 receiver",
+        running: "a race is already running", notRunning: "no race to stop",
+      };
+      lines.push(`Last command: ${data.lastCommand}, ${reasons[data.lastResult] || data.lastResult} (${Math.round(data.lastCommandAgoMs / 1000)} s ago)`);
+    }
+  }
+  return lines.join("\n");
+}
+
+async function loadElrsOsd(fill = true) {
+  const status = document.getElementById("elrsOsdStatus");
+  if (!status) return;
+  try {
+    const data = await elrsOsdRequest("/api/elrs-osd", "GET");
+    if (fill) {
+      document.getElementById("elrsOsdEnabled").checked = data.enabled;
+      document.getElementById("elrsOsdRow").value = data.row;
+      document.getElementById("elrsOsdHold").value = data.holdS;
+      document.getElementById("elrsOsdPhrase").value = "";
+      document.getElementById("elrsOsdForget").checked = false;
+      document.getElementById("elrsOsdRaceControl").checked = data.raceControl;
+      document.getElementById("elrsOsdInvert").checked = data.invert;
+    }
+    document.getElementById("elrsOsdPins").textContent = data.txPin !== undefined
+      ? `Wiring: gate GPIO${data.txPin} (TX) -> backpack RX, gate GPIO${data.rxPin} (RX) <- backpack TX, 5V, GND.`
+      : "";
+    status.textContent = elrsOsdStatusText(data);
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+async function saveElrsOsd(event) {
+  event.preventDefault();
+  const button = document.getElementById("elrsOsdSave");
+  const status = document.getElementById("elrsOsdStatus");
+  button.disabled = true;
+  try {
+    const body = new URLSearchParams();
+    body.set("enabled", document.getElementById("elrsOsdEnabled").checked ? "1" : "0");
+    body.set("forget", document.getElementById("elrsOsdForget").checked ? "1" : "0");
+    body.set("row", String(document.getElementById("elrsOsdRow").value || "14"));
+    body.set("holdS", String(document.getElementById("elrsOsdHold").value || "0"));
+    body.set("raceControl", document.getElementById("elrsOsdRaceControl").checked ? "1" : "0");
+    body.set("invert", document.getElementById("elrsOsdInvert").checked ? "1" : "0");
+    const phrase = document.getElementById("elrsOsdPhrase").value;
+    if (phrase) body.set("phrase", phrase);
+    await elrsOsdRequest("/api/elrs-osd", "POST", body);
+    status.textContent = "Saved.";
+    setTimeout(() => loadElrsOsd(true), 1500);
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function testElrsOsd() {
+  const status = document.getElementById("elrsOsdStatus");
+  try {
+    await elrsOsdRequest("/api/elrs-osd/test", "POST");
+    status.textContent = "Test sent: look for FPVGATE OSD TEST on the goggles.";
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+async function elrsOsdWifi() {
+  const status = document.getElementById("elrsOsdStatus");
+  try {
+    await elrsOsdRequest("/api/elrs-osd/wifi", "POST");
+    status.textContent = "Backpack Wi-Fi update mode requested. Connect to \"ExpressLRS Timer Backpack\" " +
+      "(password expresslrs), open http://10.0.0.1 and upload the firmware. Power-cycle the gate afterwards.";
+  } catch (error) {
+    status.textContent = error.message;
   }
 }
 

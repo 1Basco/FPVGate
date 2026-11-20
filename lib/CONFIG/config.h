@@ -260,6 +260,10 @@
 // #define PIN_I2S_BCLK 16
 // #define PIN_I2S_LRC  17
 // #define PIN_I2S_DOUT 18
+// ELRS timer backpack for goggle OSD (lib/ELRSOSD), on UART2. Free while the
+// I2S block above stays disabled.
+#define PIN_ELRS_OSD_TX 17     // S3 TX -> backpack RX
+#define PIN_ELRS_OSD_RX 18     // S3 RX <- backpack TX
 
 // Waveshare ESP32-S3-ETH (targets/WaveshareS3ETH.ini). The board uses GPIO9-14
 // (W5500), GPIO4-7 (microSD), GPIO33-37 (octal PSRAM) and GPIO19/20 (USB);
